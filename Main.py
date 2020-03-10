@@ -16,12 +16,28 @@ apiAcess = "https://www.alphavantage.co/query?" \
            "datatype=json&" \
            "apikey=IMA31P07MG9SPXRA";
 
-intervallSEC = (60/5)
+intervallSEC = (60*5)
 stocks = _collections.deque(maxlen=50)
 
 strategys = [Strategy()]
 investHistory = {}
 wealth = 1000.0;
+
+
+def printStrategys():
+
+    """
+    Prints all strategys and their latest stock changes.
+    """
+
+    global strategy
+    # Checking for what the strategys decided
+    for strategy in strategys:
+        if strategy.action() is not StockActions.STAY:
+            print("<Midas : Strategy [" + type(strategy).__name__ + "] "
+                  "decided for [" + str(strategy.action()) + "] "
+                  "with a share amount of [" + str(strategy.invest()) + "]>")
+
 
 # Main method starts curler and endless loop.
 if __name__ == '__main__':
@@ -68,29 +84,31 @@ if __name__ == '__main__':
             if strategy.action() is not StockActions.STAY:
 
                 lastTransaction = investHistory[strategy][-1] if strategy in investHistory else None
-                newTransaction = Transaction(strategy, -strategy.invest(), str(datetime.now()), strategy.action())
+                newTransaction = Transaction(strategy, stock, -strategy.invest(), str(datetime.now()), strategy.action())
 
                 # Prevent same transactions over and over again... you cant to 3 times long in a row
                 if lastTransaction is not None and lastTransaction.action is newTransaction.action: continue
 
+                # Adding to transaction history
                 if strategy in investHistory:
                     investHistory[strategy].append(newTransaction)
                 else: investHistory[strategy] = [newTransaction]
 
-                wealth += -lastTransaction.amount if lastTransaction is not None else 0
-                wealth += newTransaction.amount
+                # Profit calculation based on the difference of last and current transaction
+                profit = 0
+                if lastTransaction is not None:
 
-        # Checking for what the strategys decided
-        for strategy in strategys:
-            if strategy.action() is not StockActions.STAY:
-                print("<Midas : Strategy [" + type(strategy).__name__ +"] "
-                       "decided for [" + str(strategy.action()) + "] "
-                       "with a share amount of [" + str(strategy.invest()) + "] "
-                       "and a total profit of ["+str(strategy.volume())+"]>")
+                    difference = float(newTransaction.stock.high) - float(lastTransaction.stock.high)
+                    difference = difference if lastTransaction.action is StockActions.LONG else -difference
+                    increasedBy = (float(lastTransaction.stock.high)/difference)*100.0
+                    profit = (lastTransaction.invested/100.0) * increasedBy
+                    lastTransaction.invested += profit
 
-        # Calculating new wealth using the strategy profit/loss
-        for strategy in strategys:
-                wealth += strategy.volume()
+                # Adujusting wealth based on profit or loss
+                wealth += -lastTransaction.invested if lastTransaction is not None else 0
+                wealth += newTransaction.invested
+
+        printStrategys()
 
         print("<Midas : Current wealth "+str(wealth))
         print("<Midas : Last stocks update : "+str(stock.toJSON())+">")

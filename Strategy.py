@@ -46,10 +46,6 @@ class Strategy:
         Gets called by looping over all recorded stocks for processing the strategy.
         """
 
-        # Wenn neuer Stock besser als alter... dann long und ersetzten
-        # Wenn neuer Stock gleich dem alten... nix tun
-        # Wenn neuer Stock schlechter als alter.. short
-
         # Buy first stock
         if self.__lastBoughtStock is None:
             self.__lastAction = self.__action
@@ -87,19 +83,6 @@ class Strategy:
 
         return self.__action
 
-
-    def volume(self):
-
-        """
-        :return: The Volume of this trade
-        :rtype: int
-        Calculates the volume ( profit/loss ) of our trade...
-        """
-
-        if self.__lastBoughtStock is not None:
-            return float(self.__currentStock.high)-float(self.__lastBoughtStock.high)
-
-        return 0
 
     def invest(self):
 
