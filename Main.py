@@ -16,13 +16,52 @@ apiAcess = "https://www.alphavantage.co/query?" \
            "datatype=json&" \
            "apikey=IMA31P07MG9SPXRA";
 
-intervallSEC = (60*5)
+intervallSEC = (60/5)
 stocks = _collections.deque(maxlen=50)
 
 strategys = [Strategy()]
 investHistory = {}
-wealth = 1000.0;
+wealth = 1000.0
 
+
+######################################
+# Transactions - Methods
+######################################
+
+
+def recordedTransaction(strategy: Strategy):
+    """
+    :param strategy: Our strategy we wanna check
+    :type strategy:
+    :return: True or false
+    :rtype: bool
+    Returns true if a strategy recorded a transaction
+    """
+    return strategy in investHistory is not None and len(investHistory[strategy]) != 0
+
+def getLastTransaction(strategy: Strategy):
+
+    """
+    :param strategy: The strategy we want to receive its last transaction
+    :type strategy:
+    :return: The last Transaction the strategy made
+    :rtype: Transaction
+    Returns the last transaction a strategy made.
+    """
+
+    return investHistory[strategy][-1]
+
+def plannedTransaction(strategy: Strategy):
+
+    """
+    :param strategy: The strategy we want to check
+    :type strategy:
+    :return: True if the strategy wants to buy a new stock
+    :rtype: bool
+    """
+
+    if recordedTransaction(strategy) is False: return True
+    return recordedTransaction(strategy) and getLastTransaction(strategy).action is not strategy.action()
 
 def printStrategys():
 
@@ -31,12 +70,19 @@ def printStrategys():
     """
 
     global strategy
-    # Checking for what the strategys decided
+    # Checking for what the strategys decided, prevent
     for strategy in strategys:
         if strategy.action() is not StockActions.STAY:
+            if plannedTransaction(strategy) is False: continue
+
             print("<Midas : Strategy [" + type(strategy).__name__ + "] "
                   "decided for [" + str(strategy.action()) + "] "
                   "with a share amount of [" + str(strategy.invest()) + "]>")
+
+
+######################################
+# Main - Methods
+######################################
 
 
 # Main method starts curler and endless loop.
@@ -79,11 +125,14 @@ if __name__ == '__main__':
             for stock in stocks:
                 strategy.process(stock)
 
+        printStrategys()
+
         # Recording transactions
         for strategy in strategys:
             if strategy.action() is not StockActions.STAY:
+                if plannedTransaction(strategy) is False: continue
 
-                lastTransaction = investHistory[strategy][-1] if strategy in investHistory else None
+                lastTransaction = getLastTransaction(strategy) if strategy in investHistory else None
                 newTransaction = Transaction(strategy, stock, -strategy.invest(), str(datetime.now()), strategy.action())
 
                 # Prevent same transactions over and over again... you cant to 3 times long in a row
@@ -99,16 +148,14 @@ if __name__ == '__main__':
                 if lastTransaction is not None:
 
                     difference = float(newTransaction.stock.high) - float(lastTransaction.stock.high)
-                    difference = difference if lastTransaction.action is StockActions.LONG else -difference
-                    increasedBy = (float(lastTransaction.stock.high)/difference)*100.0
+                    difference = difference if lastTransaction.action is StockActions.LONG else float(-1*difference)
+                    increasedBy = (difference/float(lastTransaction.stock.high)/100)
                     profit = (lastTransaction.invested/100.0) * increasedBy
                     lastTransaction.invested += profit
 
                 # Adujusting wealth based on profit or loss
                 wealth += -lastTransaction.invested if lastTransaction is not None else 0
                 wealth += newTransaction.invested
-
-        printStrategys()
 
         print("<Midas : Current wealth "+str(wealth))
         print("<Midas : Last stocks update : "+str(stock.toJSON())+">")

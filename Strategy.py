@@ -92,8 +92,15 @@ class Strategy:
         Returns the share amount in $ this strategy decided to invest in.
         """
 
+        # Increase investment when we made a loss with out last bough stock
         if self.__lastTradeAction is StockActions.SHORT and self.__action is StockActions.LONG:
-            self.__shareAmount = self.__lastShareAmount * 2
+
+            difference = float(self.__lastBoughtStock.high)-float(self.__currentStock.high)
+            difference = difference if self.__lastTradeAction is StockActions.LONG else -1*difference
+
+            # Invest double the amount if we made a loss
+            if difference < 0:
+                self.__shareAmount = self.__lastShareAmount * 2
 
         self.__lastShareAmount = self.__shareAmount
         return self.__shareAmount
