@@ -3,6 +3,9 @@ import time
 import _collections;
 from datetime import datetime
 
+import pyfiglet
+from colorama import Fore, Back, Style
+
 from Stock import Stock
 from Curler import Curler
 from Strategy import Strategy, StockActions
@@ -75,7 +78,7 @@ def printStrategys():
         if strategy.action() is not StockActions.STAY:
             if plannedTransaction(strategy) is False: continue
 
-            print("<Midas : Strategy [" + type(strategy).__name__ + "] "
+            print(Fore.LIGHTGREEN_EX+"<Midas : Strategy [" + type(strategy).__name__ + "] "
                   "decided for [" + str(strategy.action()) + "] "
                   "with a share amount of [" + str(strategy.invest()) + "]>")
 
@@ -87,6 +90,10 @@ def printStrategys():
 
 # Main method starts curler and endless loop.
 if __name__ == '__main__':
+
+    # Setting up curler, header and filtering single strats
+    result = pyfiglet.figlet_format("Midas", font = "big")
+    print(Fore.YELLOW+result)
 
     curler = Curler()
     singleStrategys = list(filter(lambda x: x.single(), strategys))
@@ -100,7 +107,7 @@ if __name__ == '__main__':
         lastRefreshDate = webAPIResult["Meta Data"]["3. Last Refreshed"]
         stockJSON = webAPIResult["Time Series (5min)"][lastRefreshDate]
 
-        print("<--- Midas curling new stock updates from ["+str(lastRefreshDate)+"]--->");
+        print(Fore.LIGHTBLUE_EX+"<--- Midas curling new stock updates from ["+str(lastRefreshDate)+"]--->");
 
         # Creating stock and appending to ringbuffer
         stock = Stock(
@@ -157,8 +164,8 @@ if __name__ == '__main__':
                 wealth += -lastTransaction.invested if lastTransaction is not None else 0
                 wealth += newTransaction.invested
 
-        print("<Midas : Current wealth "+str(wealth))
-        print("<Midas : Last stocks update : "+str(stock.toJSON())+">")
+        print(Fore.LIGHTBLUE_EX+"<Midas : Last stocks update : "+str(stock.toJSON())+">")
+        print(Fore.LIGHTBLUE_EX+"<Midas : Current wealth "+str(wealth))
         time.sleep(intervallSEC)
 
 
